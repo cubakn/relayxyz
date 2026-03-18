@@ -1,0 +1,36 @@
+[package]
+name = "relayxyz"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.26"
+tungstenite = "0.26"
+futures-util = "0.3"
+redb = "2"
+secp256k1 = { version = "0.30", features = ["global-context"] }
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value"] }
+hex = "0.4"
+bech32 = "0.11"
+ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
+bytes = "1"
+dotenvy = "0.15"
+unicode-segmentation = "1"
+subtle = "2"
+rand = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
