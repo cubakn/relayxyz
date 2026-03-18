@@ -34,6 +34,7 @@ pub struct Relay {
     pub config: Config,
     pub nip11: String,
     pub homepage: String,
+    pub og_image: Vec<u8>,
     pub ws_connections: AtomicUsize,
     rate_limits: Mutex<HashMap<String, Instant>>,
     abuse_records: Mutex<HashMap<String, AbuseRecord>>,
@@ -45,6 +46,7 @@ impl Relay {
         let writer = BatchWriter::new(Arc::clone(&db), 256, Duration::from_millis(5));
         let (broadcast_tx, _) = broadcast::channel(4096);
         let nip11 = crate::nip11::nip11_json(&config);
+        let og_image = crate::og::generate(&config);
         let homepage = crate::homepage::homepage_html(&config);
         Self {
             db,
@@ -53,6 +55,7 @@ impl Relay {
             config,
             nip11,
             homepage,
+            og_image,
             ws_connections: AtomicUsize::new(0),
             rate_limits: Mutex::new(HashMap::new()),
             abuse_records: Mutex::new(HashMap::new()),

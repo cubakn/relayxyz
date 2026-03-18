@@ -6,6 +6,7 @@ pub mod error;
 pub mod event;
 pub mod homepage;
 pub mod nip11;
+pub mod og;
 pub mod relay;
 pub mod subscription;
 pub mod writer;

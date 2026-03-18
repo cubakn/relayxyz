@@ -177,11 +177,19 @@ pub async fn handle_request(
         };
     }
 
+    if method == hyper::Method::GET && path == "/public/og" {
+        return Response::builder()
+            .status(StatusCode::OK)
+            .header("content-type", "image/png")
+            .header("cache-control", "public, max-age=86400")
+            .body(Full::new(Bytes::from(relay.og_image.clone())));
+    }
+
     if method == hyper::Method::GET && path == "/public/font" {
-        return match tokio::fs::read("public/GeistMono-Variable.woff2").await {
+        return match tokio::fs::read("public/GeistMono-Regular.ttf").await {
             Ok(bytes) => Response::builder()
                 .status(StatusCode::OK)
-                .header("content-type", "font/woff2")
+                .header("content-type", "font/ttf")
                 .header("cache-control", "public, max-age=31536000, immutable")
                 .body(Full::new(Bytes::from(bytes))),
             Err(_) => Response::builder()

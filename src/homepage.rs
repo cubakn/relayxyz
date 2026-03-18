@@ -36,6 +36,34 @@ pub fn homepage_html(config: &Config) -> String {
         ));
     }
 
+    let og_image_url = config
+        .relay_url
+        .as_deref()
+        .map(|u| {
+            u.replacen("wss://", "https://", 1)
+                .replacen("ws://", "http://", 1)
+        })
+        .map(|base| format!("{base}/public/og"))
+        .unwrap_or_else(|| "/public/og".into());
+
+    let og_tags = format!(
+        concat!(
+            r#"<meta property="og:type" content="website">"#,
+            r#"<meta property="og:title" content="{name}">"#,
+            r#"<meta property="og:description" content="{desc}">"#,
+            r#"<meta property="og:image" content="{img}">"#,
+            r#"<meta property="og:image:width" content="1200">"#,
+            r#"<meta property="og:image:height" content="630">"#,
+            r#"<meta name="twitter:card" content="summary_large_image">"#,
+            r#"<meta name="twitter:title" content="{name}">"#,
+            r#"<meta name="twitter:description" content="{desc}">"#,
+            r#"<meta name="twitter:image" content="{img}">"#,
+        ),
+        name = name,
+        desc = description,
+        img = og_image_url,
+    );
+
     format!(
         r#"<!DOCTYPE html>
 <html lang="en">
@@ -43,8 +71,9 @@ pub fn homepage_html(config: &Config) -> String {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{name}</title>
+{og_tags}
 <style>
-@font-face{{font-family:'Geist Mono';src:url('/public/font')format('woff2');font-display:swap}}
+@font-face{{font-family:'Geist Mono';src:url('/public/font')format('truetype');font-display:swap}}
 *{{margin:0;padding:0;box-sizing:border-box}}
 body{{font-family:'Geist Mono',monospace;background:#0a0a0a;color:#fafafa;min-height:100vh;display:flex;align-items:center;justify-content:center}}
 main{{max-width:480px;width:100%;padding:2rem}}
@@ -105,6 +134,7 @@ auth required <b>{auth_text}</b>
 </body>
 </html>"#,
         name = name,
+        og_tags = og_tags,
         description = description,
         nip = NIP_BASE,
         max_msg = config.max_message_length,
