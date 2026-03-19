@@ -88,6 +88,8 @@ Environment variables, loaded from `.env` via [dotenvy](https://github.com/allan
 | `RELAY_ADMIN_KEY` | *(none)* | Bearer token for admin API (required when auth is enabled) |
 | `RELAY_ALLOWED_KINDS` | `0,1,2,3,4,5,6,7,16,1111,9735,10000,10001,10002` | Comma-separated event kinds |
 | `RELAY_MAX_CONTENT_GRAPHEMES` | `180` | Kind 1 text limit |
+| `RELAY_PAYMENTS_URL` | *(omitted)* | URL where users can pay for relay access (NIP-11) |
+| `RELAY_ADMISSION_FEE_MSATS` | *(omitted)* | One-time admission fee in millisatoshis (NIP-11) |
 
 **Operational Limits:**
 

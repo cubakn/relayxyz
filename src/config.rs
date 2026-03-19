@@ -20,6 +20,8 @@ pub struct Config {
     pub abuse_strike_limit: u32,
     pub abuse_strike_window_secs: u64,
     pub abuse_suspend_secs: u64,
+    pub payments_url: Option<String>,
+    pub admission_fee_msats: Option<u64>,
 }
 
 impl Config {
@@ -105,6 +107,11 @@ impl Config {
             .parse()
             .expect("invalid RELAY_ABUSE_SUSPEND_SECS");
 
+        let payments_url = std::env::var("RELAY_PAYMENTS_URL").ok();
+        let admission_fee_msats: Option<u64> = std::env::var("RELAY_ADMISSION_FEE_MSATS")
+            .ok()
+            .map(|s| s.parse().expect("invalid RELAY_ADMISSION_FEE_MSATS"));
+
         Self {
             bind,
             db_path,
@@ -125,6 +132,8 @@ impl Config {
             abuse_strike_limit,
             abuse_strike_window_secs,
             abuse_suspend_secs,
+            payments_url,
+            admission_fee_msats,
         }
     }
 }

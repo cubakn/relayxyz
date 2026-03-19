@@ -67,6 +67,8 @@ impl TestRelay {
             abuse_strike_limit: 10,
             abuse_strike_window_secs: 60,
             abuse_suspend_secs: 300,
+            payments_url: None,
+            admission_fee_msats: None,
         };
         configure(&mut config);
 
