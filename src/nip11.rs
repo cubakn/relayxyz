@@ -1,7 +1,7 @@
 use crate::config::Config;
 
 pub fn nip11_json(config: &Config) -> String {
-    serde_json::json!({
+    let mut doc = serde_json::json!({
         "name": config.name,
         "description": config.description,
         "icon": config.icon_url,
@@ -15,10 +15,18 @@ pub fn nip11_json(config: &Config) -> String {
             "max_subscriptions": config.max_subscriptions,
             "max_limit": config.default_query_limit,
             "auth_required": config.require_auth,
-            "payment_required": false,
+            "payment_required": config.require_auth,
             "restricted_writes": config.require_auth,
             "created_at_upper_limit": 600
         }
-    })
-    .to_string()
+    });
+    if let Some(url) = &config.payments_url {
+        doc["payments_url"] = serde_json::json!(url);
+    }
+    if let Some(msats) = config.admission_fee_msats {
+        doc["fees"] = serde_json::json!({
+            "admission": [{ "amount": msats, "unit": "msats" }]
+        });
+    }
+    doc.to_string()
 }
