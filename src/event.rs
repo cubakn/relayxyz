@@ -40,10 +40,7 @@ impl Event {
             )));
         }
         if self.kind == 1
-            && strip_nostr_uris(&self.content)
-                .graphemes(true)
-                .count()
-                > max_content_graphemes
+            && strip_nostr_uris(&self.content).graphemes(true).count() > max_content_graphemes
         {
             return Err(RelayError::Rejected(format!(
                 "content exceeds {} grapheme clusters",
@@ -51,16 +48,17 @@ impl Event {
             )));
         }
         if (self.kind == 6 || self.kind == 16) && !self.content.is_empty() {
-            let embedded: serde_json::Value = serde_json::from_str(&self.content).map_err(
-                |_| RelayError::Rejected("repost content must be empty or valid event JSON".into()),
-            )?;
-            if let Some(inner) = embedded.get("content").and_then(|v| v.as_str()) {
-                if strip_nostr_uris(inner).graphemes(true).count() > max_content_graphemes {
-                    return Err(RelayError::Rejected(format!(
-                        "reposted event content exceeds {} grapheme clusters",
-                        max_content_graphemes
-                    )));
-                }
+            let embedded: serde_json::Value =
+                serde_json::from_str(&self.content).map_err(|_| {
+                    RelayError::Rejected("repost content must be empty or valid event JSON".into())
+                })?;
+            if let Some(inner) = embedded.get("content").and_then(|v| v.as_str())
+                && strip_nostr_uris(inner).graphemes(true).count() > max_content_graphemes
+            {
+                return Err(RelayError::Rejected(format!(
+                    "reposted event content exceeds {} grapheme clusters",
+                    max_content_graphemes
+                )));
             }
         }
         let now = SystemTime::now()

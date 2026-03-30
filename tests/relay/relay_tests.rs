@@ -585,7 +585,11 @@ async fn test_nostr_uri_excluded_from_grapheme_count() {
     let content = "hello test nostr:nevent1qqsabcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz done";
     let event = sign_event(ALICE_SK, 1, content, vec![]);
     let ok = client.publish_ok(&event).await;
-    assert!(ok.accepted, "nostr: URIs should not count toward grapheme limit: {}", ok.message);
+    assert!(
+        ok.accepted,
+        "nostr: URIs should not count toward grapheme limit: {}",
+        ok.message
+    );
 }
 
 #[tokio::test]
@@ -599,7 +603,10 @@ async fn test_nostr_uri_only_text_counted() {
     let content = "this is too long nostr:note1abc";
     let event = sign_event(ALICE_SK, 1, content, vec![]);
     let ok = client.publish_ok(&event).await;
-    assert!(!ok.accepted, "real text exceeding limit should still be rejected");
+    assert!(
+        !ok.accepted,
+        "real text exceeding limit should still be rejected"
+    );
     assert!(ok.message.contains("content exceeds"));
 }
 
@@ -614,7 +621,11 @@ async fn test_nostr_uri_multiple_refs_stripped() {
     let content = "cc nostr:npub1abcdefghijk nostr:note1zyxwvutsrqponmlkjihgfedcba";
     let event = sign_event(ALICE_SK, 1, content, vec![]);
     let ok = client.publish_ok(&event).await;
-    assert!(ok.accepted, "multiple nostr: URIs should all be stripped: {}", ok.message);
+    assert!(
+        ok.accepted,
+        "multiple nostr: URIs should all be stripped: {}",
+        ok.message
+    );
 }
 
 #[tokio::test]
@@ -628,7 +639,11 @@ async fn test_nostr_uri_at_end_of_content() {
     let content = "hey nostr:nevent1qqsabcdef0123456789abcdefghijklmnop";
     let event = sign_event(ALICE_SK, 1, content, vec![]);
     let ok = client.publish_ok(&event).await;
-    assert!(ok.accepted, "trailing nostr: URI should be stripped: {}", ok.message);
+    assert!(
+        ok.accepted,
+        "trailing nostr: URI should be stripped: {}",
+        ok.message
+    );
 }
 
 #[tokio::test]
@@ -655,7 +670,11 @@ async fn test_repost_embedded_nostr_uri_stripped() {
         vec![vec!["e".to_string(), "a".repeat(64)]],
     );
     let ok = client.publish_ok(&event).await;
-    assert!(ok.accepted, "nostr: URIs in reposted content should be stripped: {}", ok.message);
+    assert!(
+        ok.accepted,
+        "nostr: URIs in reposted content should be stripped: {}",
+        ok.message
+    );
 }
 
 #[tokio::test]
@@ -687,12 +706,7 @@ async fn test_repost_empty_content_accepted() {
     let relay = common::TestRelay::start_open().await;
     let mut client = relay.connect().await;
 
-    let event = sign_event(
-        ALICE_SK,
-        6,
-        "",
-        vec![vec!["e".to_string(), "a".repeat(64)]],
-    );
+    let event = sign_event(ALICE_SK, 6, "", vec![vec!["e".to_string(), "a".repeat(64)]]);
     let ok = client.publish_ok(&event).await;
     assert!(ok.accepted, "tag-only repost should be accepted");
 }
@@ -745,7 +759,10 @@ async fn test_generic_repost_long_content_rejected() {
         vec![vec!["e".to_string(), "a".repeat(64)]],
     );
     let ok = client.publish_ok(&event).await;
-    assert!(!ok.accepted, "generic repost of long note should be rejected");
+    assert!(
+        !ok.accepted,
+        "generic repost of long note should be rejected"
+    );
     assert!(ok.message.contains("reposted event content exceeds"));
 }
 
@@ -761,7 +778,10 @@ async fn test_repost_invalid_json_rejected() {
         vec![vec!["e".to_string(), "a".repeat(64)]],
     );
     let ok = client.publish_ok(&event).await;
-    assert!(!ok.accepted, "repost with invalid JSON content should be rejected");
+    assert!(
+        !ok.accepted,
+        "repost with invalid JSON content should be rejected"
+    );
     assert!(ok.message.contains("valid event JSON"));
 }
 
