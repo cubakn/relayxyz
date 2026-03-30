@@ -70,7 +70,7 @@ impl Config {
         );
 
         let max_content_graphemes: usize = std::env::var("RELAY_MAX_CONTENT_GRAPHEMES")
-            .unwrap_or_else(|_| "180".into())
+            .unwrap_or_else(|_| "280".into())
             .parse()
             .expect("invalid RELAY_MAX_CONTENT_GRAPHEMES");
         let max_subscriptions: usize = std::env::var("RELAY_MAX_SUBSCRIPTIONS")

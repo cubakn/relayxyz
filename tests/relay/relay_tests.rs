@@ -575,6 +575,197 @@ async fn test_disallowed_kind_rejected() {
 }
 
 #[tokio::test]
+async fn test_nostr_uri_excluded_from_grapheme_count() {
+    let relay = common::TestRelay::start_with_overrides(false, |c| {
+        c.max_content_graphemes = 20;
+    })
+    .await;
+    let mut client = relay.connect().await;
+
+    let content = "hello test nostr:nevent1qqsabcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz done";
+    let event = sign_event(ALICE_SK, 1, content, vec![]);
+    let ok = client.publish_ok(&event).await;
+    assert!(ok.accepted, "nostr: URIs should not count toward grapheme limit: {}", ok.message);
+}
+
+#[tokio::test]
+async fn test_nostr_uri_only_text_counted() {
+    let relay = common::TestRelay::start_with_overrides(false, |c| {
+        c.max_content_graphemes = 10;
+    })
+    .await;
+    let mut client = relay.connect().await;
+
+    let content = "this is too long nostr:note1abc";
+    let event = sign_event(ALICE_SK, 1, content, vec![]);
+    let ok = client.publish_ok(&event).await;
+    assert!(!ok.accepted, "real text exceeding limit should still be rejected");
+    assert!(ok.message.contains("content exceeds"));
+}
+
+#[tokio::test]
+async fn test_nostr_uri_multiple_refs_stripped() {
+    let relay = common::TestRelay::start_with_overrides(false, |c| {
+        c.max_content_graphemes = 20;
+    })
+    .await;
+    let mut client = relay.connect().await;
+
+    let content = "cc nostr:npub1abcdefghijk nostr:note1zyxwvutsrqponmlkjihgfedcba";
+    let event = sign_event(ALICE_SK, 1, content, vec![]);
+    let ok = client.publish_ok(&event).await;
+    assert!(ok.accepted, "multiple nostr: URIs should all be stripped: {}", ok.message);
+}
+
+#[tokio::test]
+async fn test_nostr_uri_at_end_of_content() {
+    let relay = common::TestRelay::start_with_overrides(false, |c| {
+        c.max_content_graphemes = 10;
+    })
+    .await;
+    let mut client = relay.connect().await;
+
+    let content = "hey nostr:nevent1qqsabcdef0123456789abcdefghijklmnop";
+    let event = sign_event(ALICE_SK, 1, content, vec![]);
+    let ok = client.publish_ok(&event).await;
+    assert!(ok.accepted, "trailing nostr: URI should be stripped: {}", ok.message);
+}
+
+#[tokio::test]
+async fn test_repost_embedded_nostr_uri_stripped() {
+    let relay = common::TestRelay::start_with_overrides(false, |c| {
+        c.max_content_graphemes = 20;
+    })
+    .await;
+    let mut client = relay.connect().await;
+
+    let embedded = json!({
+        "id": "a".repeat(64),
+        "pubkey": "b".repeat(64),
+        "created_at": 1700000000u64,
+        "kind": 1,
+        "tags": [],
+        "content": "short nostr:nevent1qqsabcdefghijklmnopqrstuvwxyz0123456789abcdef",
+        "sig": "c".repeat(128),
+    });
+    let event = sign_event(
+        ALICE_SK,
+        6,
+        &serde_json::to_string(&embedded).unwrap(),
+        vec![vec!["e".to_string(), "a".repeat(64)]],
+    );
+    let ok = client.publish_ok(&event).await;
+    assert!(ok.accepted, "nostr: URIs in reposted content should be stripped: {}", ok.message);
+}
+
+#[tokio::test]
+async fn test_repost_short_content_accepted() {
+    let relay = common::TestRelay::start_open().await;
+    let mut client = relay.connect().await;
+
+    let embedded = json!({
+        "id": "a".repeat(64),
+        "pubkey": "b".repeat(64),
+        "created_at": 1700000000u64,
+        "kind": 1,
+        "tags": [],
+        "content": "short note",
+        "sig": "c".repeat(128),
+    });
+    let event = sign_event(
+        ALICE_SK,
+        6,
+        &serde_json::to_string(&embedded).unwrap(),
+        vec![vec!["e".to_string(), "a".repeat(64)]],
+    );
+    let ok = client.publish_ok(&event).await;
+    assert!(ok.accepted, "repost of short note should be accepted");
+}
+
+#[tokio::test]
+async fn test_repost_empty_content_accepted() {
+    let relay = common::TestRelay::start_open().await;
+    let mut client = relay.connect().await;
+
+    let event = sign_event(
+        ALICE_SK,
+        6,
+        "",
+        vec![vec!["e".to_string(), "a".repeat(64)]],
+    );
+    let ok = client.publish_ok(&event).await;
+    assert!(ok.accepted, "tag-only repost should be accepted");
+}
+
+#[tokio::test]
+async fn test_repost_long_content_rejected() {
+    let relay = common::TestRelay::start_open().await;
+    let mut client = relay.connect().await;
+
+    let long_content = "a".repeat(281);
+    let embedded = json!({
+        "id": "a".repeat(64),
+        "pubkey": "b".repeat(64),
+        "created_at": 1700000000u64,
+        "kind": 1,
+        "tags": [],
+        "content": long_content,
+        "sig": "c".repeat(128),
+    });
+    let event = sign_event(
+        ALICE_SK,
+        6,
+        &serde_json::to_string(&embedded).unwrap(),
+        vec![vec!["e".to_string(), "a".repeat(64)]],
+    );
+    let ok = client.publish_ok(&event).await;
+    assert!(!ok.accepted, "repost of long note should be rejected");
+    assert!(ok.message.contains("reposted event content exceeds"));
+}
+
+#[tokio::test]
+async fn test_generic_repost_long_content_rejected() {
+    let relay = common::TestRelay::start_open().await;
+    let mut client = relay.connect().await;
+
+    let long_content = "a".repeat(281);
+    let embedded = json!({
+        "id": "a".repeat(64),
+        "pubkey": "b".repeat(64),
+        "created_at": 1700000000u64,
+        "kind": 1,
+        "tags": [],
+        "content": long_content,
+        "sig": "c".repeat(128),
+    });
+    let event = sign_event(
+        ALICE_SK,
+        16,
+        &serde_json::to_string(&embedded).unwrap(),
+        vec![vec!["e".to_string(), "a".repeat(64)]],
+    );
+    let ok = client.publish_ok(&event).await;
+    assert!(!ok.accepted, "generic repost of long note should be rejected");
+    assert!(ok.message.contains("reposted event content exceeds"));
+}
+
+#[tokio::test]
+async fn test_repost_invalid_json_rejected() {
+    let relay = common::TestRelay::start_open().await;
+    let mut client = relay.connect().await;
+
+    let event = sign_event(
+        ALICE_SK,
+        6,
+        "not valid json",
+        vec![vec!["e".to_string(), "a".repeat(64)]],
+    );
+    let ok = client.publish_ok(&event).await;
+    assert!(!ok.accepted, "repost with invalid JSON content should be rejected");
+    assert!(ok.message.contains("valid event JSON"));
+}
+
+#[tokio::test]
 async fn test_snapshot_auth() {
     let relay = common::TestRelay::start().await;
 
