@@ -7,7 +7,7 @@ Lightweight, short note, Nostr relay in Rust.
 ## Features
 
 - **NIP-42 auth + whitelist.** Opt-in. Clients prove identity, relay checks pubkey against a whitelist managed via admin API. Wire it to payments, invites, whatever
-- **Short notes.** Kind 1 capped at 180 graphemes. This is a relay for old school Twitter-length posts, not longform content
+- **Short notes.** Kind 1 capped at 280 graphemes. This is a relay for X/Twitter-length posts, not longform content
 - **Opinionated policy.** Small kind allowlist, per-pubkey rate limiting, future timestamp rejection. The defaults are the product
 - **Single binary.** [redb](https://github.com/cberner/redb) storage, under 2,500 lines of Rust
 
@@ -87,7 +87,7 @@ Environment variables, loaded from `.env` via [dotenvy](https://github.com/allan
 | `RELAY_URL` | *(none)* | Public-facing URL, e.g. `wss://relay.example.com` (required when auth is enabled). Must match the URL clients connect to |
 | `RELAY_ADMIN_KEY` | *(none)* | Bearer token for admin API (required when auth is enabled) |
 | `RELAY_ALLOWED_KINDS` | `0,1,2,3,4,5,6,7,16,1111,9735,10000,10001,10002` | Comma-separated event kinds |
-| `RELAY_MAX_CONTENT_GRAPHEMES` | `180` | Kind 1 text limit |
+| `RELAY_MAX_CONTENT_GRAPHEMES` | `280` | Text note and repost content limit |
 | `RELAY_PAYMENTS_URL` | *(omitted)* | URL where users can pay for relay access (NIP-11) |
 | `RELAY_ADMISSION_FEE_MSATS` | *(omitted)* | One-time admission fee in millisatoshis (NIP-11) |
 

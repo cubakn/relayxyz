@@ -39,11 +39,27 @@ impl Event {
                 self.kind
             )));
         }
-        if self.kind == 1 && self.content.graphemes(true).count() > max_content_graphemes {
+        if self.kind == 1
+            && strip_nostr_uris(&self.content).graphemes(true).count() > max_content_graphemes
+        {
             return Err(RelayError::Rejected(format!(
                 "content exceeds {} grapheme clusters",
                 max_content_graphemes
             )));
+        }
+        if (self.kind == 6 || self.kind == 16) && !self.content.is_empty() {
+            let embedded: serde_json::Value =
+                serde_json::from_str(&self.content).map_err(|_| {
+                    RelayError::Rejected("repost content must be empty or valid event JSON".into())
+                })?;
+            if let Some(inner) = embedded.get("content").and_then(|v| v.as_str())
+                && strip_nostr_uris(inner).graphemes(true).count() > max_content_graphemes
+            {
+                return Err(RelayError::Rejected(format!(
+                    "reposted event content exceeds {} grapheme clusters",
+                    max_content_graphemes
+                )));
+            }
         }
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -128,4 +144,19 @@ pub fn is_expired(tags: &[Vec<String>], now: u64) -> bool {
 
 pub fn is_protected(tags: &[Vec<String>]) -> bool {
     tags.iter().any(|tag| tag.len() == 1 && tag[0] == "-")
+}
+
+fn strip_nostr_uris(content: &str) -> String {
+    let mut result = String::new();
+    let mut remaining = content;
+    while let Some(pos) = remaining.find("nostr:") {
+        result.push_str(&remaining[..pos]);
+        remaining = &remaining[pos + 6..];
+        let end = remaining
+            .find(|c: char| !c.is_ascii_lowercase() && !c.is_ascii_digit())
+            .unwrap_or(remaining.len());
+        remaining = &remaining[end..];
+    }
+    result.push_str(remaining);
+    result
 }

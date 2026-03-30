@@ -6,7 +6,7 @@
 cargo test
 ```
 
-28 integration tests covering auth, publishing, queries, replaceable events, deletion, tags, expiration, kind validation, and edge cases. All run against an in-process relay with a temp database. Rate limiting is disabled in tests.
+43 integration tests covering auth, publishing, queries, replaceable events, deletion, tags, expiration, kind validation, and edge cases. All run against an in-process relay with a temp database. Rate limiting is disabled in tests.
 
 ### Stress test
 
@@ -131,7 +131,7 @@ nak event -k 1 -c "should fail" --sec $ALICE_SEC ws://localhost:7777
 
 #### 3a. Publish a Kind 1 (short text note)
 
-**Tests:** An authenticated, whitelisted pubkey can publish a kind 1 event (max 180 graphemes).
+**Tests:** An authenticated, whitelisted pubkey can publish a kind 1 event (max 280 graphemes). `nostr:` URI references are excluded from the grapheme count.
 
 ```bash
 nak event -k 1 -c "hello from Alice" --sec $ALICE_SEC --auth ws://localhost:7777
@@ -151,13 +151,13 @@ nak key generate | xargs -I{} nak event -k 1 -c "I'm not allowed" --sec {} --aut
 
 #### 3c. Publish rejected: content too long (kind 1)
 
-**Tests:** Kind 1 events over 180 graphemes are rejected.
+**Tests:** Kind 1 events over 280 graphemes are rejected (after stripping `nostr:` URIs).
 
 ```bash
-nak event -k 1 -c "$(python3 -c "print('a' * 181)")" --sec $ALICE_SEC --auth ws://localhost:7777
+nak event -k 1 -c "$(python3 -c "print('a' * 281)")" --sec $ALICE_SEC --auth ws://localhost:7777
 ```
 
-**Expected:** `["OK", <id>, false, "rejected: content exceeds 180 grapheme clusters"]`.
+**Expected:** `["OK", <id>, false, "rejected: content exceeds 280 grapheme clusters"]`.
 
 #### 3d. Publish a Kind 0 (metadata)
 
@@ -227,7 +227,7 @@ nak event -k 1 -c "live event test" --sec $ALICE_SEC --auth ws://localhost:7777
 
 #### 3h. Publish rejected: unknown kind
 
-**Tests:** Only kinds in `RELAY_ALLOWED_KINDS` are accepted (default: 0, 1, 2, 3, 4, 5, 6, 7, 16, 1111, 9735, 10000, 10001, 10002).
+**Tests:** Only kinds in `RELAY_ALLOWED_KINDS` are accepted (default: 0, 1, 2, 3, 4, 5, 6, 7, 16, 1111, 9735, 10000, 10001, 10002). Kind 6/16 reposts with embedded content are validated against the grapheme limit.
 
 ```bash
 nak event -k 8 -c "kind 8 not allowed" --sec $ALICE_SEC --auth ws://localhost:7777
