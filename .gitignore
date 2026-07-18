@@ -2,4 +2,4 @@
 .env
 *.redb
 .claude
-rest.paw
+*.paw
