@@ -153,16 +153,31 @@ Returns a JSON audit snapshot of the relay database:
 
 ## Deployment
 
-We run ours on a 1 vCPU / 1 GB RAM / 25 GB disk Digital Ocean droplet ($5/mo).
+We run ours on a 1 vCPU / 1 GB RAM / 25 GB disk Digital Ocean droplet ($5/mo). Everything lives in one directory on the server — binary, `.env`, and the redb database — at `/opt/relayxyz/`.
 
-Cross-compile from macOS with [cargo-zigbuild](https://github.com/rust-cross/cargo-zigbuild):
+Cross-compile from macOS with [cargo-zigbuild](https://github.com/rust-cross/cargo-zigbuild) and ship the binary alongside the live one:
 
 ```bash
 cargo zigbuild --release --target x86_64-unknown-linux-musl
-scp target/x86_64-unknown-linux-musl/release/relayxyz root@your-server:/usr/local/bin/
+scp target/x86_64-unknown-linux-musl/release/relayxyz root@your-server:/opt/relayxyz/relayxyz.new
 ```
 
+Then smoke-test, back up, and swap on the server:
+
+```bash
+cd /opt/relayxyz
+RELAY_BIND=127.0.0.1:9911 RELAY_DB_PATH=/tmp/smoke.redb timeout 3 ./relayxyz.new
+rm -f /tmp/smoke.redb
+cp relayxyz relayxyz.bak
+mv relayxyz.new relayxyz
+systemctl restart relayxyz
+```
+
+If the smoke test prints `listening on 127.0.0.1:9911`, the binary is good. `relayxyz.bak` is the instant rollback: `mv` it back and restart.
+
 ### systemd
+
+`/etc/systemd/system/relayxyz.service`:
 
 ```ini
 [Unit]
@@ -170,11 +185,12 @@ Description=relayxyz nostr relay
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/relayxyz
-WorkingDirectory=/var/lib/relayxyz
-EnvironmentFile=/var/lib/relayxyz/.env
+Type=simple
+WorkingDirectory=/opt/relayxyz
+ExecStart=/opt/relayxyz/relayxyz
+EnvironmentFile=/opt/relayxyz/.env
 Restart=on-failure
-User=relayxyz
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

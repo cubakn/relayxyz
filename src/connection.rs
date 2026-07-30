@@ -749,10 +749,13 @@ fn validate_auth_event(event: &Event, challenge: &str, relay: &Relay) -> Result<
         Some(url) => url,
         None => return Err("relay not configured for auth".into()),
     };
-    let relay_ok = event
-        .tags
-        .iter()
-        .any(|t| t.len() >= 2 && t[0] == "relay" && t[1] == *relay_url);
+    // NIP-42 clients disagree on trailing slashes (NDK normalizes every relay
+    // URL to end with one), so the comparison must ignore them.
+    let relay_ok = event.tags.iter().any(|t| {
+        t.len() >= 2
+            && t[0] == "relay"
+            && t[1].trim_end_matches('/') == relay_url.trim_end_matches('/')
+    });
     if !relay_ok {
         return Err("relay tag missing or mismatch".into());
     }
